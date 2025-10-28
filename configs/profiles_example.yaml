@@ -1,0 +1,11 @@
+models:
+  default:
+    api_key: "sk-your_api_key"
+    base_url: "https://your.base.url/v1"
+    model: "gpt-4o-mini"
+    temperature: 0.0
+  gpt-4o:
+    api_key: "sk-your_api_key"
+    base_url: "https://your.base.url/v1"
+    model: "gpt-4o"
+    temperature: 0.7

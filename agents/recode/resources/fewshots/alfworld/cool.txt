@@ -1,0 +1,125 @@
+[Input]
+The current function to expand is:
+solve(instruction, observation)
+The variables you can use is:
+- instruction (str): Your task is to: put a cool mug in shelf.
+- observation (str): You are in the middle of a room. Looking quickly around you, you see a cabinet 9, a cabinet 8, a cabinet 7, a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 9, a drawer 8, a drawer 7, a drawer 6, a drawer 5, a drawer 4, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+[Output]
+<think>
+The task requires cooling, which must be done with the only fridge present (`fridge 1`). The final target is a shelf, and there are three shelves; I will choose `shelf 1` as an explicit target (the instruction’s phrasing implies a shelf; if a specific shelf is required, the upstream node should set it). I persist both IDs. I also create `all_location_IDs` from the initial observation. The plan decomposes into (1) find and take a mug by iterating known locations, handling closed receptacles via `open` and re-`examine`; (2) cool the mug at the fridge after ensuring access (navigate and open if closed); (3) place the mug on the chosen shelf (surfaces don’t need opening). Pitfalls: using the sink/microwave by mistake, assuming an object ID instead of extracting it, forgetting to re-`examine` after opening, or trying to place into a closed target.
+</think>
+
+<execute>
+import random
+cooling_location_ID = 'fridge 1'
+target_location_ID = 'shelf 1'
+obj = 'mug'
+all_location_IDs = re.findall(r'[a-z]+(?:[a-z]+)? \d+', observation)
+random.shuffle(all_location_IDs)
+
+
+obj_ID = find_and_take(obj, all_location_IDs)
+cool_with(obj_ID, cooling_location_ID)
+put_in(obj_ID, target_location_ID)
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+solve(instruction, observation)
+The variables you can use is:
+- instruction (str): Your task is to: cool some pan and put it in stoveburner.
+- observation (str): You are in the middle of a room. Looking quickly around you, you see a cabinet 16, a cabinet 15, a cabinet 14, a cabinet 13, a cabinet 12, a cabinet 11, a cabinet 10, a cabinet 9, a cabinet 8, a cabinet 7, a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 2, a countertop 1, a diningtable 1, a drawer 5, a drawer 4, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a safe 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+[Output]
+<think>
+Cooling requires the fridge (`fridge 1`). The final placement is a specific burner; I set `stoveburner 1` as the target for determinism (if the upstream plan wants another burner, it should pass it). I will assemble `all_location_IDs`. The plan mirrors the previous case: search-and-take a pan with ID extraction; cool it at the fridge after ensuring access; navigate to the target burner (a surface) and place it. Watch for a closed fridge and for the temptation to use the microwave.
+</think>
+
+<execute>
+cooling_location_ID = 'fridge 1'
+target_location_ID = 'stoveburner 1'
+obj = 'pan'
+all_location_IDs = re.findall(r'[a-z]+(?:[a-z]+)? \d+', observation)
+
+obj_ID = find_and_take(obj, all_location_IDs)
+cool_with(obj_ID, cooling_location_ID)
+put_in(obj_ID, target_location_ID)
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+obj_ID = find_and_take(obj, all_location_IDs)
+The variables you can use is:
+- obj (str): apple
+- all_location_IDs (list[str]): ['cabinet 4', 'cabinet 3', 'cabinet 2', 'cabinet 1', 'coffeemachine 1', 'countertop 1', 'diningtable 3', 'diningtable 2', 'diningtable 1', 'drawer 1', 'fridge 1', 'garbagecan 1', 'microwave 1', 'sidetable 1', 'sinkbasin 1', 'stoveburner 4', 'stoveburner 3', 'stoveburner 2', 'stoveburner 1', 'toaster 1']
+
+[Output]
+<think>
+The goal is to navigate the room methodically to find any instance of the target object and pick it up. I will iterate through the known locations, always navigating first. If a location produces no new information, I will examine it. When a location is closed, I will open it before searching. Once I observe a concrete `{obj} k` mention, I will parse that exact ID and take it from the current location. Common pitfalls include not examining after navigation (missing items), failing to open a closed container, or taking without the full `obj_ID`.
+</think>
+
+<execute>
+for location_ID in all_location_IDs:
+    obs = run(f'go to {location_ID}')
+    if 'Nothing happens.' in obs:
+        obs = run(f'examine {location_ID}')
+    location_closed = 'closed' in obs
+    if location_closed:
+        obs = run(f'open {location_ID}')
+    if f" {obj} " in obs: # Prevent names from containing relationships
+        obj_ID = re.search(rf'\b{obj} \d+\b', obs).group()
+        run(f'take {obj_ID} from {location_ID}')
+        break
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+cool_with(obj_ID, cooling_location_ID)
+The variables you can use is:
+- obj_ID (str): apple 1
+- cooling_location_ID (str): fridge 1
+
+[Output]
+<think>
+Cooling is only valid with a fridge. I will ensure access to the fridge: navigate, examine, and open if closed, because some interactions may require an openable container state. Then I will issue the cooling command with the exact object ID. Pitfalls: using the wrong station (sink/microwave) or skipping the open step when it is needed.
+</think>
+
+<execute>
+run(f'go to {cooling_location_ID}')
+run(f'cool {obj_ID} with {cooling_location_ID}')
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+put_in(obj_ID, target_location_ID)
+The variables you can use is:
+- obj_ID (str): apple 1
+- target_location_ID (str): sidetable 1
+
+[Output]
+<think>
+I will navigate to the target location, examine if nothing happens, determine if it is closed, and open if needed. Then I will move the object in. This logic supports both containers (openable) and surfaces (non-openable, but harmless to check). Pitfalls: using the wrong ID in `examine` or skipping the `location_closed` check.
+</think>
+
+<execute>
+obs = run(f'go to {target_location_ID}')
+if 'Nothing happens.' in obs:
+    obs = run(f'examine {target_location_ID}')
+location_closed = 'closed' in obs
+if location_closed:
+    obs = run(f'open {target_location_ID}')
+run(f'move {obj_ID} to {target_location_ID}')
+</execute>

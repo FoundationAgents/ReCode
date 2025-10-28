@@ -1,0 +1,98 @@
+[Input]
+The current function to expand is:
+solve(instruction, observation)
+The variables you can use is:
+- instruction (str): Your task is to: find some apple and put it in sidetable.
+- observation (str): You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 1, a diningtable 3, a diningtable 2, a diningtable 1, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a sidetable 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+[Output]
+<think>
+This is a pure acquisition-and-place task. The target is `sidetable 1`, which is a surface and does not need to be opened. I will persist the target and parse all locations from the initial observation. The plan has two phases: (1) find and take an apple by iterating the remaining locations, opening closed storage as needed and extracting the exact ID; (2) navigate to the sidetable and move the apple onto it. Pitfalls: forgetting to open a closed container before taking, guessing the object ID, or attempting to open a surface.
+</think>
+
+<execute>
+obj = 'apple'
+target_location_ID = 'sidetable 1'
+all_location_IDs = re.findall(r'[a-z]+(?:[a-z]+)? \d+', observation)
+
+obj_ID = find_and_take(obj, all_location_IDs)
+put_in(obj_ID, target_location_ID)
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+solve(instruction, observation)
+The variables you can use is:
+- instruction (str): Your task is to: put some spraybottle on toilet.
+- observation (str): You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a countertop 1, a garbagecan 1, a handtowelholder 2, a handtowelholder 1, a sinkbasin 2, a sinkbasin 1, a toilet 1, a toiletpaperhanger 1, and a towelholder 1.
+
+[Output]
+<think>
+The target is `toilet 1`, treated as a non-openable surface for placement. I will persist the target. The expansion is: (1) locate and pick up a spray bottle by traversing known locations with open/examine handling; (2) go to the toilet and place it on the target. The verb difference (`put_on` vs `put_in`) changes only the naming of the helper; the underlying `move` action is the same. Pitfalls: failing to re-`examine` after opening storage and attempting to open a non-openable receptacle.
+</think>
+
+<execute>
+obj = 'spraybottle'
+target_location_ID = 'toilet 1'
+all_location_IDs = re.findall(r'[a-z]+(?:[a-z]+)? \d+', observation)
+
+obj_ID = find_and_take(obj, all_location_IDs)
+put_on(obj_ID, target_location_ID)
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+obj_ID = find_and_take(obj, all_location_IDs)
+The variables you can use is:
+- obj (str): apple
+- all_location_IDs (list[str]): ['cabinet 4', 'cabinet 3', 'cabinet 2', 'cabinet 1', 'coffeemachine 1', 'countertop 1', 'diningtable 3', 'diningtable 2', 'diningtable 1', 'drawer 1', 'fridge 1', 'garbagecan 1', 'microwave 1', 'sidetable 1', 'sinkbasin 1', 'stoveburner 4', 'stoveburner 3', 'stoveburner 2', 'stoveburner 1', 'toaster 1']
+
+[Output]
+<think>
+The goal is to navigate the room methodically to find any instance of the target object and pick it up. I will iterate through the known locations, always navigating first. If a location produces no new information, I will examine it. When a location is closed, I will open it before searching. Once I observe a concrete `{obj} k` mention, I will parse that exact ID and take it from the current location. Common pitfalls include not examining after navigation (missing items), failing to open a closed container, or taking without the full `obj_ID`.
+</think>
+
+<execute>
+for location_ID in all_location_IDs:
+    obs = run(f'go to {location_ID}')
+    if 'Nothing happens.' in obs:
+        obs = run(f'examine {location_ID}')
+    location_closed = 'closed' in obs
+    if location_closed:
+        obs = run(f'open {location_ID}')
+    if f" {obj} " in obs: # Prevent names from containing relationships
+        obj_ID = re.search(rf'\b{obj} \d+\b', obs).group()
+        run(f'take {obj_ID} from {location_ID}')
+        break
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+put_in(obj_ID, target_location_ID)
+The variables you can use is:
+- obj_ID (str): apple 1
+- target_location_ID (str): sidetable 1
+
+[Output]
+<think>
+I will navigate to the target location, examine if nothing happens, determine if it is closed, and open if needed. Then I will move the object in. This logic supports both containers (openable) and surfaces (non-openable, but harmless to check). Pitfalls: using the wrong ID in `examine` or skipping the `location_closed` check.
+</think>
+
+<execute>
+obs = run(f'go to {target_location_ID}')
+if 'Nothing happens.' in obs:
+    obs = run(f'examine {target_location_ID}')
+location_closed = 'closed' in obs
+if location_closed:
+    obs = run(f'open {target_location_ID}')
+run(f'move {obj_ID} to {target_location_ID}')
+</execute>

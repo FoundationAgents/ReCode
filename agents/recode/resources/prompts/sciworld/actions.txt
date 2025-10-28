@@ -1,0 +1,19 @@
+open OBJ: open a container
+close OBJ: close a container
+activate OBJ: activate a device
+deactivate OBJ: deactivate a device
+connect OBJ to OBJ: connect electrical components
+disconnect OBJ: disconnect electrical components
+use OBJ [on OBJ]: use a device/item
+look around: describe the current room
+examine OBJ: describe an object in detail
+look at OBJ: describe a container's contents
+read OBJ: read a note or book
+move OBJ to OBJ: move an object to a container
+pick up OBJ: move an object to the inventory
+pour OBJ into OBJ: pour a liquid into a container
+mix OBJ: chemically mix a container
+teleport to LOC: teleport to a specific room
+focus on OBJ: signal intent on a task object
+wait: task no action for 10 steps
+wait1: task no action for a step

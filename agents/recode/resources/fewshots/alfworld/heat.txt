@@ -1,0 +1,126 @@
+[Input]
+The current function to expand is:
+solve(instruction, observation)
+The variables you can use is:
+- instruction (str): Your task is to: heat some egg and put it in diningtable.
+- observation (str): You are in the middle of a room. Looking quickly around you, you see a cabinet 10, a cabinet 9, a cabinet 8, a cabinet 7, a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a diningtable 1, a drawer 6, a drawer 5, a drawer 4, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+[Output]
+<think>
+I must produce a heating plan and keep it high-level. Heating is only valid with the microwave (microwave 1). The final placement surface is `diningtable 1`. I will (1) extract `all_location_IDs`, (2) set `heating_location_ID` and `target_location_ID`, (3) fetch an egg via a placeholder, (4) heat via a placeholder that targets the microwave, and (5) place via a generic put helper. The main pitfalls are omitting the `heat_with(...)` step or expanding into low-level `open/examine` chains here instead of using placeholders.
+</think>
+
+<execute>
+heating_location_ID = 'microwave 1'
+target_location_ID = 'diningtable 1'
+obj = 'egg'
+all_location_IDs = re.findall(r'[a-z]+(?:[a-z]+)? \d+', observation)
+
+obj_ID = find_and_take(obj, all_location_IDs)
+heat_with(obj_ID, heating_location_ID)
+put_in(obj_ID, target_location_ID)
+</execute>
+
+
+
+
+
+[Input]
+Now what you need to EXPAND is:
+put_a_hot_apple_in_fridge()
+
+The current function to expand is:
+solve(instruction, observation)
+The variables you can use is:
+- instruction (str): Your task is to: put a hot apple in fridge.
+- observation (str): You are in the middle of a room. Looking quickly around you, you see a cabinet 13, a cabinet 12, a cabinet 11, a cabinet 10, a cabinet 9, a cabinet 8, a cabinet 7, a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 1, a diningtable 1, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+[Output]
+<think>
+A “hot apple” is not pre-existing; I must heat an apple at microwave 1 then place it into fridge 1. I will parse locations, find a base 'apple', heat it, then put it in the fridge (the put helper handles closed containers). Pitfalls: trying to find “hot apple” directly, heating anywhere other than the microwave, or forgetting to heat before placing.
+</think>
+
+<execute>
+heating_location_ID = 'microwave 1'
+target_location_ID = 'fridge 1'
+obj = 'apple'
+all_location_IDs = re.findall(r'[a-z]+(?:[a-z]+)? \d+', observation)
+
+obj_ID = find_and_take(obj, all_location_IDs)
+heat_with(obj_ID, heating_location_ID)
+put_in(obj_ID, target_location_ID)
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+obj_ID = find_and_take(obj, all_location_IDs)
+The variables you can use is:
+- obj (str): apple
+- all_location_IDs (list[str]): ['cabinet 4', 'cabinet 3', 'cabinet 2', 'cabinet 1', 'coffeemachine 1', 'countertop 1', 'diningtable 3', 'diningtable 2', 'diningtable 1', 'drawer 1', 'fridge 1', 'garbagecan 1', 'microwave 1', 'sidetable 1', 'sinkbasin 1', 'stoveburner 4', 'stoveburner 3', 'stoveburner 2', 'stoveburner 1', 'toaster 1']
+
+[Output]
+<think>
+The goal is to navigate the room methodically to find any instance of the target object and pick it up. I will iterate through the known locations, always navigating first. If a location produces no new information, I will examine it. When a location is closed, I will open it before searching. Once I observe a concrete `{obj} k` mention, I will parse that exact ID and take it from the current location. Common pitfalls include not examining after navigation (missing items), failing to open a closed container, or taking without the full `obj_ID`.
+</think>
+
+<execute>
+for location_ID in all_location_IDs:
+    obs = run(f'go to {location_ID}')
+    if 'Nothing happens.' in obs:
+        obs = run(f'examine {location_ID}')
+    location_closed = 'closed' in obs
+    if location_closed:
+        obs = run(f'open {location_ID}')
+    if f" {obj} " in obs: # Prevent names from containing relationships
+        obj_ID = re.search(rf'\b{obj} \d+\b', obs).group()
+        run(f'take {obj_ID} from {location_ID}')
+        break
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+heat_with(obj_ID, heating_location_ID)
+The variables you can use is:
+- obj_ID (str): apple 1
+- heating_location_ID (str): microwave 1
+
+[Output]
+<think>
+Heating is valid only with a microwave. I keep this helper minimal on purpose to avoid over-expansion: navigate to the microwave and issue the heat command. Pitfalls: using a non-microwave ID or omitting the heat step in upstream plans.
+</think>
+
+<execute>
+run(f'go to {heating_location_ID}')
+run(f'heat {obj_ID} with {heating_location_ID}')
+</execute>
+
+
+
+
+[Input]
+The current function to expand is:
+put_in(obj_ID, target_location_ID)
+The variables you can use is:
+- obj_ID (str): apple 1
+- target_location_ID (str): sidetable 1
+
+[Output]
+<think>
+I will navigate to the target location, examine if nothing happens, determine if it is closed, and open if needed. Then I will move the object in. This logic supports both containers (openable) and surfaces (non-openable, but harmless to check). Pitfalls: using the wrong ID in `examine` or skipping the `location_closed` check.
+</think>
+
+<execute>
+obs = run(f'go to {target_location_ID}')
+if 'Nothing happens.' in obs:
+    obs = run(f'examine {target_location_ID}')
+location_closed = 'closed' in obs
+if location_closed:
+    obs = run(f'open {target_location_ID}')
+run(f'move {obj_ID} to {target_location_ID}')
+</execute>

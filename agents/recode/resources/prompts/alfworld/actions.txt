@@ -1,0 +1,11 @@
+- go to {loc_ID}  
+- open {loc_ID}
+- close {loc_ID}
+- take {obj_ID} from {loc_ID}
+- move {obj_ID} to {loc_ID}
+- use {desklamp_ID}
+- inventory
+- heat {obj_ID} with {microwave_ID}
+- cool {obj_ID} with {fridge_ID}
+- clean {obj_ID} with {sinkbasin_ID}
+- exmaine {loc_ID}

@@ -1,0 +1,3 @@
+- search[keywords]
+- click[element]
+- click[Buy Now]
