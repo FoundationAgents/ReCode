@@ -2,43 +2,179 @@
 
 [![Arxiv](https://img.shields.io/badge/2510.23564-arXiv-red)](https://arxiv.org/abs/2510.23564)
 
-ReCode is an agent paradigm based on recursive code generation that solves complex problems through progressive function expansion.
+> If you encounter any difficulties in using or reproducing the code, please contact me at [zhaoyangyu713@gmail.com](mailto:zhaoyangyu713@gmail.com)
+
+ReCode introduces recursive code generation for LLM agents, unifying plan and action into a single representation. By treating high-level plans as placeholder functions that recursively decompose into executable primitives, it achieves universal granularity control and dynamically adapts from strategic thinking to concrete actions. This repository hosts the reference implementation used in the paper, along with environment wrappers and experiment tooling.
 
 <p align="center">
-<a href=""><img src="figures/figure2-method-new-page-001.jpg" alt="An overview of ReCode" title="An overview of ReCode" width="92%"></a>
+<a href=""><img src="figures/figure1-comparison.jpg" alt="A comparison of LLM-based agent decision-making paradigms" title="A comparison of LLM-based agent decision-making paradigms" width="92%"></a>
 </p>
 
 ## Core Idea
 
 ReCode adopts a divide-and-conquer strategy, decomposing complex tasks into executable code fragments:
 
-1. **Tree-structured Code**: Organizes code nodes in a tree structure, where each node represents a subtask
-2. **Recursive Expansion**: When encountering placeholder functions, the LLM automatically expands them into more specific implementations or smaller subtasks
-3. **Dynamic Execution**: Executes code fragments in real-time and decides next steps based on execution results
+1. **Tree-structured code**: Organizes partial programs in a tree where each node captures one sub-task and records its execution trace.
+2. **Recursive expansion**: Placeholder functions are expanded by the LLM into more specific calls or smaller subroutines using environment-specific prompts and few-shots.
+3. **Dynamic execution loop**: Each node is executed immediately; fresh observations decide whether to expand further, retry, or finish.
+4. **Shared executor state**: A constrained Python executor maintains environment variables, validates code blocks, and exposes the toolset available to the agent.
 
-## Core Components
+<p align="center">
+<a href=""><img src="figures/figure2-method-new.jpg" alt="An overview of ReCode" title="An overview of ReCode" width="92%"></a>
+</p>
 
-- **CodeNode**: Code node containing code, status, thought process, etc.
-- **Executor**: Code executor providing sandboxed environment for Python execution
-- **LLM Expansion**: When placeholder functions are encountered, calls LLM to expand them
-- **Environment Adaptation**: Supports multiple task environments
+## Repository Layout
+
+- `run.py` – CLI entry point that instantiates agents/envs, manages concurrency, and writes run summaries.
+- `agents/recode/` – ReCode agent implementation, prompt templates, and utility helpers.
+- `envs/` – Environment wrappers and assets for `alfworld`, `webshop`, and `sciworld`.
+- `configs/` – LLM profile templates and (expected) pricing metadata used by the async client.
+- `utils/` – Shared components: async OpenAI wrapper, constrained executor, logging helpers, error types.
+- `figures/` – Paper figures used throughout this README.
 
 ## Quick Start
 
-We're still working on this section. Please check back later for updates.
+We are refreshing this section and will publish the full walkthrough before **31 Oct (UTC)**.
 
-## Usage Example
+## Configure LLM Access
+
+- `configs/profiles.yaml` contains named profiles. The `run.py --profile` flag selects which profile to forward to `AsyncLLM`. Example:
+
+  ```yaml
+  models:
+    default:
+      api_key: "sk-your_api_key"
+      base_url: "https://api.openai.com/v1"
+      model: "gpt-4o-mini"
+      temperature: 0.0
+      track_costs: true
+    gpt-4o:
+      api_key: "sk-your_other_key"
+      base_url: "https://api.openai.com/v1"
+      model: "gpt-4o"
+      temperature: 0.7
+      max_tokens: 512
+  ```
+
+- Cost tracking loads `configs/prices.json`. If you do not want to record costs, set `track_costs: false` for the profile.
+- As a fallback, you can omit the file and set `OPENAI_API_KEY` in the environment; the default profile will then use it.
+
+## Environment Setup
+
+### ALFWorld
+- Install `alfworld` (already part of the Quick Start) and download the official dataset following the [ALFWorld instructions](https://github.com/alfworld/alfworld).
+- Set `ALFWORLD_DATA` to the dataset root or edit `envs/alfworld/base_config.yaml` to point to your local paths:
+
+  ```bash
+  export ALFWORLD_DATA=/path/to/alfworld
+  ```
+
+- Optional filters such as `task_types` and `max_steps` can be supplied via YAML/CLI and are forwarded to `AlfworldEnv`.
+
+### ScienceWorld
+- Install `scienceworld` from the [ScienceWorld repository](https://github.com/allenai/ScienceWorld).
+
+### WebShop
+- Ensure `gdown` is installed.
+- Run the provided helper to fetch the goal set and pre-built search index:
+
+  ```bash
+  bash envs/webshop/setup.sh
+  ```
+
+  The script downloads Google Drive archives, extracts them into `envs/webshop/data` and `envs/webshop/search_index`, and keeps the simulator under `envs/webshop/src`.
+- `WebShopEnv` exposes knobs such as `max_steps` and `success_threshold` that can be overridden via config.
+
+## Running ReCode
+
+`run.py` is the canonical entry point. It resolves agent/environment aliases, manages concurrency, streams logs, and emits a structured summary.
+
+```bash
+# ALFWorld, single instance
+python run.py -a recode -e alfworld -n 1 --split test --profile default
+
+# WebShop, 3 test goals, allow deeper recursion
+python run.py -a recode -e webshop -n 3 --split test --profile default --max-depth 12
+
+# ScienceWorld, run 5 instances with 2-way concurrency
+python run.py -a recode -e sciworld -n 5 -c 2 --profile gpt-4o
+```
+
+Key CLI flags:
+- `-a / --agent` – class path or alias (`recode` resolves to `agents.recode.agent.ReCodeAgent`).
+- `-e / --env` – environment class or alias (`alfworld`, `webshop`, `sciworld`).
+- `-n / --instances` – number of evaluation episodes.
+- `-c / --concurrent` – max concurrent episodes (rich progress UI automatically adapts).
+- `--split`, `--seed`, `--max-depth`, `--profile` – forwarded to both agent and environment.
+- `-C / --config` – YAML file whose keys override CLI flags; useful for complex sweeps.
+
+Example YAML (`configs/example.yaml`):
+
+```yaml
+agent: recode
+env: alfworld
+instances: 10
+concurrent: 2
+profile: gpt-4o
+split: test
+task_types: ["put", "clean"]
+max_depth: 12
+max_retry: 4
+```
+
+Run it with:
+
+```bash
+python run.py -C configs/example.yaml
+```
+
+## Logging & Results
+
+- Each run creates `logs/<run_id>/` with:
+  - `running_logs/run.log` – aggregated stream of agent + environment logs.
+  - `running_logs/instance_<id>.log` – per-instance traces (when multiple instances are launched).
+  - `<results.json>` – structured summary written by `write_summary`, containing per-instance metrics and aggregated statistics (overall + per task type).
+- The console prints a condensed summary (success rate, standard metrics, by-task breakdown) after completion.
+
+## Extending to New Environments
+
+1. **Implement the `Env` interface** under `envs/<your_env>/env.py`. Use `base.environment.Env` as the contract: implement `reset`, `_run`, `is_done`, `is_success`, and `report`. Return `{"observations": [...], "env_name": <name>, "env": self}` from `reset`.
+2. **Expose prompts and guidance** in `agents/recode/resources/`:
+   - `prompts/<env_name>/actions.txt` – concise description of valid `run("...")` calls/tools.
+   - `fewshots/<env_name>/` – one or more `.txt` examples showing thought→execute patterns.
+   - If your environment has task types, update `agents/recode/agent.py::_load_resources` and `agents/recode/utils.parse_raw_observation` to parse initial observations correctly.
+3. **Register aliases** by adding your class to `ENV_ALIASES` in `run.py` (optional but convenient) and, if needed, plan-specific logic in the agent utilities.
+4. Optionally add setup scripts (similar to `envs/webshop/setup.sh`) to document dataset fetching.
+
+## Programmatic Use
+
+You can embed the agent directly inside your own loop by reusing the provided utilities:
 
 ```python
-# Initialize agent
-agent = ReCodeAgent(task_type="alfworld")
+import asyncio
 
-# Reset and configure
-agent.reset(config, {"env": environment, "env_name": "alfworld"})
+from agents.recode.agent import ReCodeAgent
+from envs.alfworld.env import AlfworldEnv
 
-# Execute task
-result = await agent.act(["Your task is to: put a clean plate in fridge"])
+async def solve_once():
+    config = {"split": "test", "task_types": ["put"], "max_depth": 10}
+    env = AlfworldEnv(logger=None)
+    agent = ReCodeAgent()
+    init_info = env.reset(config)
+    agent.reset(config, init_info)
+
+    observations = init_info["observations"]
+    while not env.is_done():
+        actions = await agent.act(observations)
+        observations = await env.run(actions)
+
+    print(env.report())
+    await env.close()
+
+asyncio.run(solve_once())
 ```
+
+The same pattern works for any `Env` implementation; be sure to pass a logger if you need file-backed traces.
 
 ## Citation
 
