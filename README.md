@@ -36,7 +36,7 @@ ReCode adopts a divide-and-conquer strategy, decomposing complex tasks into exec
 
 To evaluate the effectiveness of ReCode, we divide our experiments into the inference part and the training part.
 
-1. **Inference Result**: we compare against several mainstream paradigm (ReAct, CodeAct) and some of the work focused on improving LLM-based agent planning (AdaPlanner and ADaPT). ReCode achieved significant performance improvements across all three environments, with an average score of 60.8, surpassing the best baseline method by 10.5 (relative 20.9%). <u>In our simple tests, ReCode achieves a perfect **100** score in ALFWorld under `claude-4-sonnet`.</u>
+1. **Inference Result**: we compare against several mainstream paradigm (ReAct, CodeAct) and some of the work focused on improving LLM-based agent planning (AdaPlanner and ADaPT). ReCode achieved significant performance improvements across all three environments, with an average score of 60.8, surpassing the best baseline method by 10.5 (relative 20.9%). _With our tests, ReCode can achieve a perfect **100** score in ALFWorld under `claude-4-sonnet`._
 
 
 
