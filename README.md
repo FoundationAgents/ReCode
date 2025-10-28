@@ -2,7 +2,7 @@
 
 [![Arxiv](https://img.shields.io/badge/2510.23564-arXiv-red)](https://arxiv.org/abs/2510.23564)
 
-> If you encounter any difficulties in using or reproducing the code, please contact me at [zhaoyangyu713@gmail.com](mailto:zhaoyangyu713@gmail.com)
+> If you encounter any difficulties in using or reproducing the code, please contact me at [zhaoyangyu713@gmail.com](mailto:zhaoyangyu713@gmail.com).
 
 ReCode introduces recursive code generation for LLM agents, unifying plan and action into a single representation. By treating high-level plans as placeholder functions that recursively decompose into executable primitives, it achieves universal granularity control and dynamically adapts from strategic thinking to concrete actions. This repository hosts the reference implementation used in the paper, along with environment wrappers and experiment tooling.
 
@@ -31,6 +31,26 @@ ReCode adopts a divide-and-conquer strategy, decomposing complex tasks into exec
 - `configs/` – LLM profile templates and (expected) pricing metadata used by the async client.
 - `utils/` – Shared components: async OpenAI wrapper, constrained executor, logging helpers, error types.
 - `figures/` – Paper figures used throughout this README.
+
+## Experiments
+
+To evaluate the effectiveness of ReCode, we divide our experiments into the inference part and the training part.
+
+1. **Inference Result**: we compare against several mainstream paradigm (ReAct, CodeAct) and some of the work focused on improving LLM-based agent planning (AdaPlanner and ADaPT). ReCode achieved significant performance improvements across all three environments, with an average score of 60.8, surpassing the best baseline method by 10.5 (relative 20.9%). <u>In our simple tests, ReCode achieves a perfect **100** score in ALFWorld under `claude-4-sonnet`.</u>
+
+
+
+<p align="center">
+<a href=""><img src="figures/inference-result.png" alt="Inference performance across environments" title="Inference evaluation summary" width="92%"></a>
+</p>
+
+2. **Training Result**: we conduct supervised fine-tuning (SFT) on ReCode, ReAct and CodeAct with `Qwen2.5-7B-Instruct`. ReCode+SFT achieves a strong average performance of 70.4% across all environments, surpassing both ReAct+SFT (67.6%) and CodeAct+SFT (55.8%).
+
+<p align="center">
+<a href=""><img src="figures/sft-result.png" alt="SFT performance across environments" title="SFT evaluation summary" width="92%"></a>
+</p>
+
+
 
 ## Quick Start
 
