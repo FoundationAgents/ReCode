@@ -54,7 +54,7 @@ To evaluate the effectiveness of ReCode, we divide our experiments into the infe
 
 ## Quick Start
 
-We are refreshing this section and will publish the full walkthrough before **1 Nov (UTC)**.
+We are refreshing this section and will publish the full walkthrough before **23.59 1 Nov (UTC+8)**.
 
 ## Configure LLM Access
 
