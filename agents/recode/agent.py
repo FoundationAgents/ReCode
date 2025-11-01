@@ -206,3 +206,53 @@ class ReCodeAgent(Agent):
             if child_max > max_depth:
                 max_depth = child_max
         return max_depth
+
+    def _get_formatted_tree(self) -> dict:
+        version = "recode.plan.v1"
+
+        meta = {
+            "env_name": getattr(self, "env_name", None),
+            "task_type": getattr(self, "task_type", None),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "max_depth": getattr(self, "max_depth", None),
+            "max_retry": getattr(self, "max_retry", None),
+            "max_rewrite": getattr(self, "max_rewrite", None),
+        }
+
+        nodes = {}
+        edges = []
+        root_id = self.root.id if self.root else None
+
+        if self.root:
+            stack = [self.root]
+            while stack:
+                node = stack.pop()
+                nodes[node.id] = {
+                    "code": node.code,
+                    "thought": getattr(node, "thought", None),
+                    "status": node.status.value if isinstance(node.status, Enum) else node.status,
+                    "depth": node.depth,
+                    "observations": list(node.observations) if node.observations else [],
+                    "error": node.error,
+                }
+                for child in node.children:
+                    edges.append([node.id, child.id])
+                # Preserve order by pushing children in reverse for DFS
+                for child in reversed(node.children):
+                    stack.append(child)
+
+        return {
+            "version": version,
+            "meta": meta,
+            "root_id": root_id,
+            "nodes": nodes,
+            "edges": edges,
+        }
+
+
+    def report(self) -> dict:
+        return {
+            'cost': self.llm.spent,
+            'tree': self._get_formatted_tree(),
+            'max_depth': self._get_max_depth(self.root)
+        }

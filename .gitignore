@@ -1,4 +1,11 @@
 .vscode/
 __pycache__/
-envs/webshop/search_index
 .DS_Store
+*.pyc
+*.zip
+logs/
+envs/webshop/data/
+envs/webshop/search_index/
+envs/webshop/data.zip
+envs/webshop/indexes.zip
+profiles.yaml
