@@ -44,17 +44,70 @@ To evaluate the effectiveness of ReCode, we divide our experiments into the infe
 <a href=""><img src="figures/inference-result.png" alt="Inference performance across environments" title="Inference evaluation summary" width="92%"></a>
 </p>
 
-2. **Training Result**: we conduct supervised fine-tuning (SFT) on ReCode, ReAct and CodeAct with `Qwen2.5-7B-Instruct`. ReCode+SFT achieves a strong average performance of 70.4% across all environments, surpassing both ReAct+SFT (67.6%) and CodeAct+SFT (55.8%).
+2. **Training Result**: we conduct supervised fine-tuning (SFT) on ReCode, ReAct and CodeAct with `Qwen2.5-7B-Instruct`. ReCode+SFT delivers an impressive average performance of 70.4% across all environments, outperforming both ReAct+SFT (67.6%) and CodeAct+SFT (55.8%), highlighting its exceptional data efficiency.
+
+<p align="center">
+<a href=""><img src="figures/sft-data.png" alt="SFT performance across environments" title="SFT evaluation summary" width="92%"></a>
+</p>
 
 <p align="center">
 <a href=""><img src="figures/sft-result.png" alt="SFT performance across environments" title="SFT evaluation summary" width="92%"></a>
 </p>
 
-
-
 ## Quick Start
 
-We are refreshing this section and will publish the full walkthrough before **23.59 1 Nov (UTC+8)**.
+To run ReCode, we need a conda environment. The python version should be 3.10 or newer.
+
+Then, it is necessary to configure dependencies for three environments (it has not been confirmed whether conflicts will arise in the same environment), and we suggest configuring them in three separate environments.
+
+```bash
+conda create -n recode-envname python=3.10 # Replace "envname" with the your environment name.
+conda activate recode-envname
+```
+
+---
+
+### ALFWorld
+- Follow the [ALFWorld instructions](https://github.com/alfworld/alfworld).
+- Set `ALFWORLD_DATA` to the dataset root or edit `envs/alfworld/base_config.yaml` to point to your local paths:
+
+  ```bash
+  export ALFWORLD_DATA=/path/to/alfworld
+  ```
+
+### ScienceWorld
+- Follow the instruciton from the [ScienceWorld repository](https://github.com/allenai/ScienceWorld).
+
+### WebShop
+Thanks to [ETO ](https://github.com/Yifan-Song793/ETO) for providing a convenient script to configure WebShop environment.
+
+```bash
+cd envs/webshop
+pip install -e .
+conda install -y -c conda-forge openjdk=11
+pip install "en_core_web_lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.6.0/en_core_web_lg-3.6.0-py3-none-any.whl"
+```
+
+Run the provided helper to fetch the goal set and pre-built search index:
+
+```bash
+# The current path is "envs/webshop"
+bash setup.sh
+```
+
+---
+
+Install some other dependencies.
+
+```bash
+pip install -r requirements.txt # Here may not be complete, please contact me promptly if you encounter any problems
+```
+
+Ensure `configs/profiles.yaml` points to a valid API credential (copy `configs/profiles_example.yaml` if you need a template), then run a short dry run in any enabled environment:
+```bash
+python run.py -a recode -e alfworld -n 1 --split test --profile default
+```
+Replace `alfworld` with `webshop` or `sciworld` once their assets are available. Logs are written to `logs/<run_id>/`, and the console prints a condensed summary for quick diagnostics.
 
 ## Configure LLM Access
 
@@ -78,32 +131,10 @@ We are refreshing this section and will publish the full walkthrough before **23
 
 - Cost tracking loads `configs/prices.json`. If you do not want to record costs, set `track_costs: false` for the profile.
 - As a fallback, you can omit the file and set `OPENAI_API_KEY` in the environment; the default profile will then use it.
-
-## Environment Setup
-
-### ALFWorld
-- Install `alfworld` (already part of the Quick Start) and download the official dataset following the [ALFWorld instructions](https://github.com/alfworld/alfworld).
-- Set `ALFWORLD_DATA` to the dataset root or edit `envs/alfworld/base_config.yaml` to point to your local paths:
-
+- A ready-to-edit template lives at `configs/profiles_example.yaml`; copy it to `configs/profiles.yaml` if you're starting from scratch:
   ```bash
-  export ALFWORLD_DATA=/path/to/alfworld
+  cp configs/profiles_example.yaml configs/profiles.yaml
   ```
-
-- Optional filters such as `task_types` and `max_steps` can be supplied via YAML/CLI and are forwarded to `AlfworldEnv`.
-
-### ScienceWorld
-- Install `scienceworld` from the [ScienceWorld repository](https://github.com/allenai/ScienceWorld).
-
-### WebShop
-- Ensure `gdown` is installed.
-- Run the provided helper to fetch the goal set and pre-built search index:
-
-  ```bash
-  bash envs/webshop/setup.sh
-  ```
-
-  The script downloads Google Drive archives, extracts them into `envs/webshop/data` and `envs/webshop/search_index`, and keeps the simulator under `envs/webshop/src`.
-- `WebShopEnv` exposes knobs such as `max_steps` and `success_threshold` that can be overridden via config.
 
 ## Running ReCode
 
@@ -137,7 +168,7 @@ instances: 10
 concurrent: 2
 profile: gpt-4o
 split: test
-task_types: ["put", "clean"]
+task_types: ["put", "clean"] # For ALFWorld
 max_depth: 12
 max_retry: 4
 ```
