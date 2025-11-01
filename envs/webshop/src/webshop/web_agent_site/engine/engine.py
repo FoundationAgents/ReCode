@@ -203,7 +203,9 @@ def init_search_engine(num_products=None):
         indexes = 'indexes'
     else:
         raise NotImplementedError(f'num_products being {num_products} is not supported yet.')
-    search_engine = LuceneSearcher(os.path.join(BASE_DIR, f'../search_index/{indexes}'))
+    index_dir = os.path.abspath(os.path.join(BASE_DIR, f'../search_index/{indexes}'))
+    assert os.path.isdir(index_dir), f'Index dir missing: {index_dir}'
+    search_engine = LuceneSearcher(index_dir)
     # search_engine = LuceneSearcher(os.path.join(BASE_DIR, f'../search_index/indexes'))
     return search_engine
 
