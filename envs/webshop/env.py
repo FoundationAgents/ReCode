@@ -348,7 +348,7 @@ class WebShopEnv(Env):
             # Add to trajectory in human agent style
             try:
                 goal = self.webshop_env.get_instruction_text()
-            except:
+            except Exception:
                 goal = "Episode completed"
             
             trajectory_entry = {
@@ -376,7 +376,7 @@ class WebShopEnv(Env):
             # Add error to trajectory
             try:
                 goal = self.webshop_env.get_instruction_text()
-            except:
+            except Exception:
                 goal = "Error occurred"
             
             trajectory_entry = {
