@@ -71,16 +71,20 @@ class ReCodeAgent(Agent):
 
     def _load_resources(self):
         resources_path = Path("agents/recode/resources/prompts") / self.env_name
-        self.available_actions = open(resources_path / "actions.txt", "r").read()
+        with open(resources_path / "actions.txt", "r") as f:
+            self.available_actions = f.read()
 
         fewshots_path = Path("agents/recode/resources/fewshots") / self.env_name
         if self.env_name == "alfworld":
-            self.fewshots = open(fewshots_path / f"{self.task_type}.txt", "r").read()
+            with open(fewshots_path / f"{self.task_type}.txt", "r") as f:
+                self.fewshots = f.read()
         elif self.env_name == "webshop":
-            self.fewshots = open(fewshots_path / "base.txt", "r").read()
+            with open(fewshots_path / "base.txt", "r") as f:
+                self.fewshots = f.read()
             # self.fewshots = "(No Examples)"
         elif self.env_name == "sciworld":
-            self.fewshots = open(fewshots_path / "base.txt", "r").read()
+            with open(fewshots_path / "base.txt", "r") as f:
+                self.fewshots = f.read()
         else:
             raise ValueError(f"Unsupported environment in _load_resources: {self.env_name}")
 
